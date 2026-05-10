@@ -78,19 +78,6 @@ SE_python_project2025/
 
 ---
 
-## 🧩 Team Members
-
-**Group Name:** MMNY Tech
-
-| ID      | Name             | Role      | GitHub Profile                                             |
-| :------ | :--------------- | :-------- | :--------------------------------------------------------- |
-| 1700915 | Mikiyas Hulualem | Developer | [@Mikiyas97](https://github.com/Mikiyas97)                 |
-| 1501580 | Yonatan Zeleke   | Developer | [@dbu150](https://github.com/dbu150)                       |
-| 1700928 | Muluneh Babush   | Developer | [@muluneh819-dotcom](https://github.com/muluneh819-dotcom) |
-| 1700954 | Nejat Shimels    | Developer | [@nejutiii](https://github.com/nejutiii)                   |
-
----
-
 ## 🚀 How to Run
 
 Follow these steps to get the bot running on your local machine.
