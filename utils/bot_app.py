@@ -1,5 +1,8 @@
 import asyncio
-from telegram.ext import ApplicationBuilder, ConversationHandler, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from telegram.ext import (
+    ApplicationBuilder, ConversationHandler, CommandHandler, 
+    MessageHandler, CallbackQueryHandler, filters, PicklePersistence
+)
 from telegram.request import HTTPXRequest
 
 # Imports from existing modules
@@ -18,14 +21,25 @@ from modules.explore_images import refresh_callback
 from modules.main_handlers import start, handle_mode_choice, handle_user_location, cancel_directions
 
 def create_application():
+    # Use PicklePersistence to keep state across some Vercel invocations
+    # Note: /tmp is the only writable directory on Vercel
+    persistence = PicklePersistence(filepath="/tmp/bot_state.pickle")
+    
     t_request = HTTPXRequest(connection_pool_size=8, connect_timeout=60, read_timeout=60)
-    application = ApplicationBuilder().token(BOT_TOKEN).request(t_request).build()
+    application = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .request(t_request)
+        .persistence(persistence)
+        .build()
+    )
 
     feedback_conv = ConversationHandler(
         entry_points=[CommandHandler("feedback", start_feedback)],
         states={WAITING_FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_feedback_message)]},
         fallbacks=[CommandHandler("cancel", cancel_feedback)],
-        per_chat=True
+        name="feedback_conversation",
+        persistent=True
     )
 
     conv_handler = ConversationHandler(
@@ -43,7 +57,8 @@ def create_application():
             TICKET_INFO: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ticket_info)],
         },
         fallbacks=[CommandHandler("start", start)],
-        per_chat=True
+        name="main_conversation",
+        persistent=True
     )
 
     # Register Handlers

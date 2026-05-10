@@ -18,13 +18,16 @@ async def process_telegram_update(update_json):
     
     update = Update.de_json(update_json, bot_app.bot)
     await bot_app.process_update(update)
+    
+    # Force flush persistence to /tmp/bot_state.pickle
+    if bot_app.persistence:
+        await bot_app.persistence.flush()
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     try:
         update_json = request.get_json(force=True)
         
-        # Using the existing loop or creating a new one if necessary
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
@@ -32,7 +35,6 @@ def webhook():
             asyncio.set_event_loop(loop)
 
         if loop.is_running():
-            # This shouldn't happen in a standard Vercel request but handle it just in case
             future = asyncio.run_coroutine_threadsafe(process_telegram_update(update_json), loop)
             future.result()
         else:

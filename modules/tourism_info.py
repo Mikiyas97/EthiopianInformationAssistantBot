@@ -84,6 +84,15 @@ async def handle_original_menu(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Retrieve stored data
     site_key = context.user_data.get('current_site')
+    
+    # Check if state was lost
+    if not site_key and choice not in ["🔙 Change Site", "🏠 Home"]:
+        await update.message.reply_text(
+            "⚠️ Session timeout. Please select the tourist site again.",
+            reply_markup=ReplyKeyboardMarkup([["🏛️ Original Guide"]], resize_keyboard=True)
+        )
+        return CHOOSING_MODE
+
     site_data = data.get(site_key, {})
     
     # Get the original name the user typed (e.g. "Lalibela")
