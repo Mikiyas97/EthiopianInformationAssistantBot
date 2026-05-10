@@ -10,30 +10,33 @@ app = Flask(__name__)
 # Global variable to hold the bot application instance
 bot_app = None
 
-async def get_bot_app():
+async def process_telegram_update(update_json):
     global bot_app
     if bot_app is None:
         bot_app = create_application()
         await bot_app.initialize()
-    return bot_app
+    
+    update = Update.de_json(update_json, bot_app.bot)
+    await bot_app.process_update(update)
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     try:
         update_json = request.get_json(force=True)
         
-        async def run_bot():
-            application = await get_bot_app()
-            update = Update.de_json(update_json, application.bot)
-            await application.process_update(update)
-
-        # Create a new event loop for this request
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # Using the existing loop or creating a new one if necessary
         try:
-            loop.run_until_complete(run_bot())
-        finally:
-            loop.close()
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            # This shouldn't happen in a standard Vercel request but handle it just in case
+            future = asyncio.run_coroutine_threadsafe(process_telegram_update(update_json), loop)
+            future.result()
+        else:
+            loop.run_until_complete(process_telegram_update(update_json))
 
         return "OK", 200
     except Exception as e:
