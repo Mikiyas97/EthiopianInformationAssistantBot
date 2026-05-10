@@ -47,24 +47,34 @@ async def handle_ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             system_instruction=system_prompt
         )
 
-        # Retrieve or initialize chat history for Gemini
-        if 'gemini_history' not in context.chat_data:
-            context.chat_data['gemini_history'] = []
+        # Retrieve history from context (stored as simple dicts for persistence safety)
+        if 'chat_history' not in context.chat_data:
+            context.chat_data['chat_history'] = []
         
+        # Convert simple dicts back to Gemini format
+        gemini_history = []
+        for msg in context.chat_data['chat_history']:
+            gemini_history.append({"role": msg["role"], "parts": [msg["content"]]})
+
         # Start a chat session with the history
-        chat_session = model.start_chat(history=context.chat_data['gemini_history'])
+        chat_session = model.start_chat(history=gemini_history)
         
         # Send message and get response
         response = await chat_session.send_message_async(user_text, generation_config=AI_GENERATION_CONFIG)
         ai_reply = response.text
 
-        # Update persistent history
-        context.chat_data['gemini_history'] = chat_session.history
+        # Update persistent history (keep it simple for Pickle)
+        context.chat_data['chat_history'].append({"role": "user", "content": user_text})
+        context.chat_data['chat_history'].append({"role": "model", "content": ai_reply})
+        
+        # Limit history to last 10 exchanges
+        if len(context.chat_data['chat_history']) > 20:
+            context.chat_data['chat_history'] = context.chat_data['chat_history'][-20:]
 
         await update.message.reply_text(ai_reply, parse_mode="Markdown")
 
     except Exception as e:
         print(f"❌ GEMINI API ERROR: {e}") 
-        await update.message.reply_text(f"⚠️ I'm having trouble connecting to my AI brain. Error: {str(e)}")
+        await update.message.reply_text(f"⚠️ I'm having trouble connecting to my AI brain. Please try again in a moment.")
 
     return AI_MODE

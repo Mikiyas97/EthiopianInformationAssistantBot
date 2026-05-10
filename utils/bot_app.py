@@ -21,8 +21,6 @@ from modules.explore_images import refresh_callback
 from modules.main_handlers import start, handle_mode_choice, handle_user_location, cancel_directions
 
 def create_application():
-    # Use PicklePersistence to keep state across some Vercel invocations
-    # Note: /tmp is the only writable directory on Vercel
     persistence = PicklePersistence(filepath="/tmp/bot_state.pickle")
     
     t_request = HTTPXRequest(connection_pool_size=8, connect_timeout=60, read_timeout=60)
@@ -34,16 +32,12 @@ def create_application():
         .build()
     )
 
-    feedback_conv = ConversationHandler(
-        entry_points=[CommandHandler("feedback", start_feedback)],
-        states={WAITING_FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_feedback_message)]},
-        fallbacks=[CommandHandler("cancel", cancel_feedback)],
-        name="feedback_conversation",
-        persistent=True
-    )
-
+    # Merged Conversation Handler to prevent blocking
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CommandHandler("feedback", start_feedback)
+        ],
         states={
             CHOOSING_MODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_mode_choice)],
             AI_MODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ai_chat)],
@@ -55,15 +49,20 @@ def create_application():
             ],
             TOURISM_INFO: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_tourism_info)],
             TICKET_INFO: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ticket_info)],
+            WAITING_FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_feedback_message)],
         },
-        fallbacks=[CommandHandler("start", start)],
-        name="main_conversation",
-        persistent=True
+        fallbacks=[
+            CommandHandler("start", start),
+            CommandHandler("cancel", cancel_feedback),
+            CommandHandler("feedback", start_feedback)
+        ],
+        name="ethiopia_bot_conversation",
+        persistent=True,
+        allow_reentry=True
     )
 
     # Register Handlers
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(feedback_conv)
     
     # Inline Button Handlers
     application.add_handler(CallbackQueryHandler(handle_admin_decision, pattern="^feedback_"))
