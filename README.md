@@ -49,79 +49,90 @@ Travelers in Ethiopia often face fragmented information sources. This project so
 
 The project uses a modular file structure for scalability and maintainability:
 
----
-
-````md
-# SE_python_project2025
-
-## 📂 File Structure
-
-SE_python_project2025/
-├── main.py           # Entry point: initializes bot, handlers, states, and starts polling
-├── data.py           # Static database of 50+ Ethiopian tourist sites
-├── requirements.txt  # Python dependencies
-├── .env              # Environment variables (API keys, tokens)
-├── modules/          # Feature modules (business logic)
+```text
+.
+├── api/
+│   └── webhook.py      # Vercel Serverless Function (Webhook entry point)
+├── modules/            # Feature modules (business logic)
 │   ├── ai_chatbot.py
 │   ├── explore_images.py
-│   ├── mapping.py
-│   ├── weather.py
-│   ├── tourism_info.py
 │   ├── feedback.py
 │   ├── help_system.py
-│   └── images.py
-└── utils/            # Shared utilities
-    ├── __init__.py
-    ├── config.py
-    └── models.py
-````
+│   ├── images.py
+│   ├── main_handlers.py # Refactored core handlers
+│   ├── mapping.py
+│   ├── tourism_info.py
+│   └── weather.py
+├── utils/              # Shared utilities
+│   ├── __init__.py
+│   ├── bot_app.py      # Centralized Bot application factory
+│   ├── config.py       # Configuration and Environment Variable management
+│   └── models.py
+├── data.py             # Static database of 50+ Ethiopian tourist sites
+├── main.py             # Local Entry point: starts the bot in Polling mode
+├── requirements.txt    # Python dependencies
+├── vercel.json         # Vercel deployment configuration
+├── .env                # Environment variables (API keys, tokens)
+└── .gitignore          # Git ignore rules
+```
 
 ---
 
-## 🚀 How to Run
+## 🚀 Deployment
+
+### 1️⃣ Local Run (Polling Mode)
 
 Follow these steps to get the bot running on your local machine.
 
-### 1️⃣ Prerequisites
-
+#### Prerequisites
 * **Python 3.10** or higher installed
 * **API Keys Required:**
-
   * 🤖 Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
   * 🧠 Google Gemini API Key (from [Google AI Studio](https://aistudio.google.com/))
   * ⛅ OpenWeatherMap API Key (from [OpenWeather](https://openweathermap.org/api))
 
-### 2️⃣ Installation Steps
+#### Installation Steps
 
-#### Step 1: Clone the Repository
+1. **Clone the Repository**
+   ```bash
+   git clone <your-repository-link>
+   cd <project-directory>
+   ```
 
-```bash
-git clone <your-repository-link>
-cd SE_python_project2025
-```
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-#### Step 2: Install Dependencies
+3. **Configure Environment**
+   Create a `.env` file in the root folder:
+   ```ini
+   TELEGRAM_BOT_TOKEN=your_telegram_token_here
+   WEATHER_API_KEY=your_weather_key_here
+   GEMINI_API_KEY=your_gemini_key_here
+   FEEDBACK_CHANNEL_ID=-100xxxxxxxxxx
+   ```
 
-```bash
-pip install -r requirements.txt
-```
+4. **Run the Application**
+   ```bash
+   python main.py
+   ```
 
-#### Step 3: Configure Environment
+---
 
-Create a `.env` file in the root folder:
+### 2️⃣ Vercel Deployment (Webhook Mode)
 
-```ini
-TELEGRAM_BOT_TOKEN=your_telegram_token_here
-WEATHER_API_KEY=your_weather_key_here
-GEMINI_API_KEY=your_gemini_key_here
-FEEDBACK_CHANNEL_ID=-100xxxxxxxxxx  # Optional: Admin feedback logs
-```
+This project is optimized for deployment on **Vercel** as a Serverless function.
 
-#### Step 4: Run the Application
+1. **Import to Vercel**: Connect your GitHub repository to Vercel.
+2. **Set Environment Variables**: In Vercel Project Settings, add all keys from your `.env` file.
+3. **Deploy**: Vercel will automatically detect the Python environment and `api/webhook.py`.
+4. **Set Telegram Webhook**: Once deployed, tell Telegram where to send updates by visiting this URL in your browser:
+   ```text
+   https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://<YOUR_VERCEL_URL>/api/webhook
+   ```
 
-```bash
-python main.py
-```
+**Note:** The bot uses `PicklePersistence` in the `/tmp` directory to maintain session states on Vercel. However, since `/tmp` is ephemeral, sessions may reset after periods of inactivity.
 
 ---
 
