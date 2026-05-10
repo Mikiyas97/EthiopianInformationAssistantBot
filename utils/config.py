@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Keys
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY")
 FEEDBACK_CHANNEL_ID = os.getenv("FEEDBACK_CHANNEL_ID")
 
 # States

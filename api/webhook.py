@@ -1,39 +1,49 @@
 import os
 import asyncio
+import traceback
 from flask import Flask, request
 from telegram import Update
 from utils.bot_app import create_application
 
 app = Flask(__name__)
 
-# Initialize the application globally
-# Note: Vercel may reuse this instance between requests
-bot_app = create_application()
+# Global variable to hold the bot application instance
+bot_app = None
 
-async def handle_update(update_json):
-    # Ensure the bot_app is initialized
-    if not bot_app.running:
+async def get_bot_app():
+    global bot_app
+    if bot_app is None:
+        bot_app = create_application()
         await bot_app.initialize()
-    
-    update = Update.de_json(update_json, bot_app.bot)
-    await bot_app.process_update(update)
+    return bot_app
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
-    if request.method == "POST":
+    try:
+        update_json = request.get_json(force=True)
+        
+        async def run_bot():
+            application = await get_bot_app()
+            update = Update.de_json(update_json, application.bot)
+            await application.process_update(update)
+
+        # Create a new event loop for this request
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            update_json = request.get_json(force=True)
-            # Run the async handler
-            asyncio.run(handle_update(update_json))
-            return "OK", 200
-        except Exception as e:
-            print(f"Error handling update: {e}")
-            return "Error", 500
-    return "Method Not Allowed", 405
+            loop.run_until_complete(run_bot())
+        finally:
+            loop.close()
+
+        return "OK", 200
+    except Exception as e:
+        error_msg = traceback.format_exc()
+        print(f"Error handling update: {error_msg}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/')
 def index():
-    return "Bot is running!"
+    return "Ethiopian Information Assistant Bot is online!"
 
 if __name__ == '__main__':
     app.run(port=5000)
